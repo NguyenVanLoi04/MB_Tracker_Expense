@@ -1,33 +1,100 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Icon } from "@/components/Icon";
+import { COLORS } from "@/constants/theme";
+import { Tabs } from "expo-router";
+import React from "react";
+import { Platform } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  withSpring,
+} from "react-native-reanimated";
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+const AnimatedIcon = ({
+  name,
+  color,
+  size,
+  focused,
+}: {
+  name: any;
+  color: string;
+  size: number;
+  focused: boolean;
+}) => {
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: withSpring(focused ? 1.2 : 1) }],
+    };
+  });
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <Icon name={name} color={color} size={size} />
+    </Animated.View>
+  );
+};
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.gray[400],
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+        tabBarStyle: {
+          backgroundColor: COLORS.white,
+          borderTopWidth: 0,
+          elevation: 10,
+          shadowColor: COLORS.black,
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.05,
+          shadowRadius: 10,
+          height: Platform.OS === "ios" ? 50 : 50,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "600",
+        },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: "Tổng quan",
+          tabBarIcon: ({ color, size, focused }) => (
+            <AnimatedIcon
+              name="layout-dashboard"
+              color={color}
+              size={size}
+              focused={focused}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: "Lịch sử",
+          tabBarIcon: ({ color, size, focused }) => (
+            <AnimatedIcon
+              name="history"
+              color={color}
+              size={size}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Cài đặt",
+          tabBarIcon: ({ color, size, focused }) => (
+            <AnimatedIcon
+              name="settings"
+              color={color}
+              size={size}
+              focused={focused}
+            />
+          ),
         }}
       />
     </Tabs>
