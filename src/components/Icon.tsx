@@ -4,6 +4,8 @@ import React from "react";
 
 interface IconProps extends LucideProps {
   name: string;
+  size?: number;
+  color?: string;
 }
 
 export const Icon = ({ name, ...props }: IconProps) => {
