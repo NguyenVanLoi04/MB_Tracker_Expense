@@ -1,60 +1,91 @@
+import { useLogin } from "@/hooks/auth/useLogin";
+import { zodResolver } from "@hookform/resolvers/zod";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { FormProvider, useForm } from "react-hook-form";
 import {
+  ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import Animated, {
-  FadeInDown,
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import Toast from "react-native-toast-message";
+import { useDispatch, useSelector } from "react-redux";
 import { Icon } from "../src/components/Icon";
+import { RHFCheckbox, RHFInput } from "../src/components/RHF";
 import { COLORS, RADIUS, SPACING } from "../src/constants/theme";
+import {
+  ILoginFormValues,
+  loginDefaultValues,
+  loginSchema,
+} from "../src/schemas/login.schema";
+import { RootState } from "../src/store";
+import { setToken } from "../src/store/slices/authSlice";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [focusedInput, setFocusedInput] = useState<"email" | "password" | null>(
-    null,
-  );
 
-  const focusSharedValue = useSharedValue(0);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
-  useEffect(() => {
-    focusSharedValue.value = withSpring(focusedInput ? 1 : 0);
-  }, [focusedInput, focusSharedValue]);
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      router.replace("/(tabs)");
+    }
+  }, [isAuthenticated, router]);
 
-  const logoAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        { scale: interpolate(focusSharedValue.value, [0, 1], [1, 0.9]) },
-        {
-          rotate: `${interpolate(focusSharedValue.value, [0, 1], [0, 10])}deg`,
-        },
-      ],
-    };
+  const methods = useForm<ILoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: loginDefaultValues,
   });
 
-  const handleLogin = () => {
-    router.replace("/(tabs)");
+  const { handleSubmit } = methods;
+
+  const dispatch = useDispatch();
+  const { mutate: login, isPending } = useLogin({
+    onSuccess: (response: any, variables: ILoginFormValues) => {
+      const token = response.data?.accessToken;
+      if (token) {
+        dispatch(setToken(token));
+        if (variables.rememberMe) {
+          AsyncStorage.setItem("user_token", token);
+        } else {
+          AsyncStorage.removeItem("user_token");
+        }
+      }
+
+      Toast.show({
+        type: "success",
+        text1: "Đăng nhập thành công",
+        text2: "Chào mừng bạn quay trở lại! 👋",
+      });
+      router.replace("/(tabs)");
+    },
+    onError: (error: any) => {
+      Toast.show({
+        type: "error",
+        text1: "Đăng nhập thất bại",
+        text2:
+          error?.response?.data?.message || "Vui lòng kiểm tra lại tài khoản!",
+      });
+    },
+  });
+
+  const onLogin = (data: ILoginFormValues) => {
+    console.log("Login data:", data);
+    login(data);
   };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.innerContainer}>
@@ -63,9 +94,9 @@ export default function LoginScreen() {
             entering={FadeInDown.duration(800).springify()}
             style={styles.header}
           >
-            <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
+            <View style={styles.logoContainer}>
               <Icon name="wallet" size={48} color={COLORS.primary} />
-            </Animated.View>
+            </View>
             <Text style={styles.title}>Chào mừng trở lại</Text>
             <Text style={styles.subtitle}>Đăng nhập để quản lý chi tiêu</Text>
           </Animated.View>
@@ -75,78 +106,28 @@ export default function LoginScreen() {
             entering={FadeInDown.delay(200).duration(800).springify()}
             style={styles.form}
           >
-            {/* Email Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Tài khoản / Email</Text>
-              <View
-                style={[
-                  styles.inputContainer,
-                  focusedInput === "email" && styles.inputContainerFocused,
-                ]}
-              >
-                <Icon
-                  name="mail"
-                  size={20}
-                  color={
-                    focusedInput === "email" ? COLORS.primary : COLORS.gray[400]
-                  }
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Nhập email của bạn"
-                  placeholderTextColor={COLORS.gray[400]}
-                  value={email}
-                  onChangeText={setEmail}
-                  onFocus={() => setFocusedInput("email")}
-                  onBlur={() => setFocusedInput(null)}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-            </View>
+            <FormProvider {...methods}>
+              {/* Email Input */}
+              <RHFInput
+                name="userName"
+                label="Tài khoản"
+                placeholder="Nhập tài khoản của bạn"
+                icon="mail"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
 
-            {/* Password Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Mật khẩu</Text>
-              <View
-                style={[
-                  styles.inputContainer,
-                  focusedInput === "password" && styles.inputContainerFocused,
-                ]}
-              >
-                <Icon
-                  name="lock"
-                  size={20}
-                  color={
-                    focusedInput === "password"
-                      ? COLORS.primary
-                      : COLORS.gray[400]
-                  }
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Nhập mật khẩu"
-                  placeholderTextColor={COLORS.gray[400]}
-                  value={password}
-                  onChangeText={setPassword}
-                  onFocus={() => setFocusedInput("password")}
-                  onBlur={() => setFocusedInput(null)}
-                  secureTextEntry={!isPasswordVisible}
-                />
-                <TouchableOpacity
-                  onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                  style={styles.eyeIcon}
-                >
-                  <Icon
-                    name={isPasswordVisible ? "eye-off" : "eye"}
-                    size={20}
-                    color={COLORS.gray[400]}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
+              {/* Password Input */}
+              <RHFInput
+                name="passWord"
+                label="Mật khẩu"
+                placeholder="Nhập mật khẩu"
+                icon="lock"
+                isPassword
+              />
+
+              <RHFCheckbox name="rememberMe" label="Ghi nhớ đăng nhập" />
+            </FormProvider>
 
             <TouchableOpacity style={styles.forgotPasswordButton}>
               <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
@@ -155,11 +136,19 @@ export default function LoginScreen() {
             {/* Login Button */}
             <Animated.View entering={FadeInDown.delay(400).springify()}>
               <TouchableOpacity
-                style={styles.loginButton}
+                style={[
+                  styles.loginButton,
+                  isPending && styles.loginButtonDisabled,
+                ]}
                 activeOpacity={0.8}
-                onPress={handleLogin}
+                onPress={handleSubmit(onLogin)}
+                disabled={isPending}
               >
-                <Text style={styles.loginButtonText}>Đăng nhập</Text>
+                {isPending ? (
+                  <ActivityIndicator color={COLORS.white} />
+                ) : (
+                  <Text style={styles.loginButtonText}>Đăng nhập</Text>
+                )}
               </TouchableOpacity>
             </Animated.View>
 
@@ -274,6 +263,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 8,
+  },
+  loginButtonDisabled: {
+    backgroundColor: COLORS.gray[400],
+    shadowOpacity: 0,
+    elevation: 0,
   },
   loginButtonText: {
     color: COLORS.white,

@@ -1,11 +1,13 @@
 import * as Icons from "lucide-react-native";
 import { LucideProps } from "lucide-react-native";
 import React from "react";
+import { StyleProp, ViewStyle } from "react-native";
 
 interface IconProps extends LucideProps {
   name: string;
   size?: number;
   color?: string;
+  style?: StyleProp<ViewStyle>;
 }
 
 export const Icon = ({ name, ...props }: IconProps) => {

@@ -12,16 +12,19 @@ import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import "react-native-reanimated";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
+import { Provider, useDispatch, useSelector } from "react-redux";
 import { AppSplashScreen } from "../src/components/AppSplashScreen";
 import { ExpenseProvider } from "../src/context/ExpenseContext";
 import { useColorScheme } from "../src/hooks/use-color-scheme";
-
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Provider } from "react-redux";
-import { store } from "../src/store";
-
-import Toast from "react-native-toast-message";
+import { RootState, store } from "../src/store";
+import {
+  completeInitialization,
+  setToken,
+} from "../src/store/slices/authSlice";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -60,27 +63,60 @@ export default function RootLayout() {
 
   return (
     <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <SafeAreaProvider>
-          <ExpenseProvider>
-            <ThemeProvider
-              value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-            >
-              <Stack initialRouteName="login">
-                <Stack.Screen name="login" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="register"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="+not-found" />
-              </Stack>
-              <StatusBar style="light" />
-              <Toast />
-            </ThemeProvider>
-          </ExpenseProvider>
-        </SafeAreaProvider>
-      </QueryClientProvider>
+      <InitialAuthLoader>
+        <QueryClientProvider client={queryClient}>
+          <SafeAreaProvider>
+            <ExpenseProvider>
+              <ThemeProvider
+                value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+              >
+                <Stack initialRouteName="login">
+                  <Stack.Screen name="login" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="register"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen name="+not-found" />
+                </Stack>
+                <StatusBar style="light" />
+                <Toast autoHide={true} visibilityTime={2500} topOffset={50} />
+              </ThemeProvider>
+            </ExpenseProvider>
+          </SafeAreaProvider>
+        </QueryClientProvider>
+      </InitialAuthLoader>
     </Provider>
   );
+}
+
+function InitialAuthLoader({ children }: { children: React.ReactNode }) {
+  const dispatch = useDispatch();
+  const { isInitialized } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    const loadToken = async () => {
+      try {
+        const token = await AsyncStorage.getItem("user_token");
+        if (token) {
+          dispatch(setToken(token));
+        } else {
+          dispatch(completeInitialization());
+        }
+      } catch (e) {
+        console.error("Failed to load token", e);
+        dispatch(completeInitialization());
+      }
+    };
+    loadToken();
+  }, [dispatch]);
+
+  if (!isInitialized) {
+    return <AppSplashScreen />;
+  }
+
+  return <>{children}</>;
 }

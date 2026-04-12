@@ -1,7 +1,6 @@
 import React from "react";
 import {
   Alert,
-  Platform,
   StatusBar,
   StyleSheet,
   Text,
@@ -17,6 +16,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AddTransactionModal } from "../../src/components/AddTransactionModal";
+import { HomeHeader } from "../../src/components/home/HomeHeader";
 import { Icon } from "../../src/components/Icon";
 import { SpendingChart } from "../../src/components/SpendingChart";
 import { SummaryCard } from "../../src/components/SummaryCard";
@@ -79,18 +79,7 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <Animated.View
-        entering={FadeInDown.duration(800).springify()}
-        style={styles.header}
-      >
-        <View>
-          <Text style={styles.greeting}>Xin chào,</Text>
-          <Text style={styles.userName}>Người dùng</Text>
-        </View>
-        <TouchableOpacity style={styles.notificationBtn}>
-          <Icon name="bell" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-      </Animated.View>
+      <HomeHeader />
 
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
@@ -322,36 +311,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: SPACING.lg,
-    paddingTop: Platform.OS === "android" ? 40 : 10,
-    paddingBottom: SPACING.md,
-  },
-  greeting: {
-    fontSize: 14,
-    color: COLORS.textLight,
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: COLORS.text,
-  },
-  notificationBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.white,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 2,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   scrollContent: {
     paddingBottom: 100,

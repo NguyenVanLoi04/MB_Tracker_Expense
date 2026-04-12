@@ -9,6 +9,12 @@ export interface ICallbackError {
 }
 
 export interface ICallbackResponse {
-  onSuccess: (response: any) => void;
-  onError: (error: Error) => void;
+  onSuccess: (response: any, variables?: any) => void;
+  onError: (error: any) => void;
+}
+
+export interface INestResponse<T> {
+  statusCode: number;
+  message: string;
+  data: T;
 }
