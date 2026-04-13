@@ -1,9 +1,13 @@
-export type TransactionType = "expense" | "income";
+import { ETransactionType } from "../enums/transaction";
+
+export { ETransactionType };
+
+export type TransactionType = ETransactionType;
 
 export interface Transaction {
   id: string;
   amount: number;
-  categoryId: string;
+  categoryId: number;
   note: string;
   date: string;
   type: TransactionType;
@@ -16,7 +20,7 @@ export interface Summary {
 }
 
 export interface Category {
-  id: string;
+  id: number;
   name: string;
   icon: string;
   color: string;

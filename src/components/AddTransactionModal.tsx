@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import React from "react";
+import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -10,12 +12,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { CATEGORIES } from "../constants/categories";
 import { COLORS, RADIUS, SPACING } from "../constants/theme";
 import { useExpense } from "../context/ExpenseContext";
 import { Icon } from "./Icon";
+import { CategoryItem } from "./home/CategoryItem";
 
-import { Transaction } from "@/types";
+import { useGetDefaultCategory } from "@/hooks/category/useGetDefaultCategory";
+import { useCreateTransaction } from "@/hooks/transaction/useCreateTransaction";
+import { ETransactionType, Transaction } from "@/types";
+import { ITransactionFormData } from "../interfaces/transaction/interface";
+import { transactionSchema } from "../schemas/transaction/schema";
 
 interface AddTransactionModalProps {
   visible: boolean;
@@ -28,51 +34,80 @@ export const AddTransactionModal = ({
   onClose,
   initialData,
 }: AddTransactionModalProps) => {
-  const { addTransaction, updateTransaction } = useExpense();
-  const [type, setType] = useState<"expense" | "income">("expense");
-  const [amount, setAmount] = useState("");
-  const [categoryId, setCategoryId] = useState(CATEGORIES[0].id);
-  const [note, setNote] = useState("");
+  const { updateTransaction } = useExpense();
+  const createTransactionMutation = useCreateTransaction();
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<ITransactionFormData>({
+    resolver: zodResolver(transactionSchema) as any,
+    defaultValues: {
+      type: ETransactionType.EXPENSE,
+      amount: "",
+      categoryId: 0,
+      note: "",
+    },
+  });
+
+  const { data: categoryResponse } = useGetDefaultCategory();
+  const categoryIncome = categoryResponse?.data?.filter(
+    (c) => c.type === ETransactionType.INCOME,
+  );
+  const categoryExpense = categoryResponse?.data?.filter(
+    (c) => c.type === ETransactionType.EXPENSE,
+  );
+
+  const type = watch("type");
+  const categoryId = watch("categoryId");
 
   React.useEffect(() => {
-    if (initialData) {
-      setType(initialData.type);
-      setAmount(initialData.amount.toString());
-      setCategoryId(initialData.categoryId);
-      setNote(initialData.note);
-    } else {
-      setType("expense");
-      setAmount("");
-      setCategoryId(CATEGORIES.find((c) => c.type === "expense")?.id || "1");
-      setNote("");
+    if (visible) {
+      if (initialData) {
+        reset({
+          type: initialData.type,
+          amount: initialData.amount.toString(),
+          categoryId: initialData.categoryId,
+          note: initialData.note,
+        });
+      } else {
+        reset({
+          type: ETransactionType.EXPENSE,
+          amount: "",
+          categoryId: 0,
+          note: "",
+        });
+      }
     }
-  }, [initialData, visible]);
+  }, [initialData, visible, reset]);
 
-  const filteredCategories = CATEGORIES.filter((c) => c.type === type);
-
-  const handleSubmit = async () => {
-    if (!amount || isNaN(Number(amount))) return;
-
+  const onSubmit: SubmitHandler<ITransactionFormData> = async (data) => {
+    const amountNum = Number(data.amount);
+    if (isNaN(amountNum)) {
+      return;
+    }
     if (initialData) {
       await updateTransaction({
         ...initialData,
-        amount: Number(amount),
-        categoryId,
-        note,
-        type,
+        amount: amountNum,
+        categoryId: data.categoryId,
+        note: data.note,
+        type: data.type,
       });
     } else {
-      await addTransaction({
-        amount: Number(amount),
-        categoryId,
-        note,
+      await createTransactionMutation.mutateAsync({
+        amount: amountNum,
+        categoryId: data.categoryId,
+        note: data.note,
         date: new Date().toISOString(),
-        type,
+        type: data.type,
       });
     }
 
-    setAmount("");
-    setNote("");
     onClose();
   };
 
@@ -106,19 +141,18 @@ export const AddTransactionModal = ({
               <TouchableOpacity
                 style={[
                   styles.typeButton,
-                  type === "expense" && styles.typeButtonActiveExpense,
+                  type === ETransactionType.EXPENSE &&
+                    styles.typeButtonActiveExpense,
                 ]}
                 onPress={() => {
-                  setType("expense");
-                  setCategoryId(
-                    CATEGORIES.find((c) => c.type === "expense")?.id || "1",
-                  );
+                  setValue("type", ETransactionType.EXPENSE);
+                  setValue("categoryId", 0);
                 }}
               >
                 <Text
                   style={[
                     styles.typeText,
-                    type === "expense" && styles.typeTextActive,
+                    type === ETransactionType.EXPENSE && styles.typeTextActive,
                   ]}
                 >
                   Khoản chi
@@ -127,19 +161,18 @@ export const AddTransactionModal = ({
               <TouchableOpacity
                 style={[
                   styles.typeButton,
-                  type === "income" && styles.typeButtonActiveIncome,
+                  type === ETransactionType.INCOME &&
+                    styles.typeButtonActiveIncome,
                 ]}
                 onPress={() => {
-                  setType("income");
-                  setCategoryId(
-                    CATEGORIES.find((c) => c.type === "income")?.id || "100",
-                  );
+                  setValue("type", ETransactionType.INCOME);
+                  setValue("categoryId", 0);
                 }}
               >
                 <Text
                   style={[
                     styles.typeText,
-                    type === "income" && styles.typeTextActive,
+                    type === ETransactionType.INCOME && styles.typeTextActive,
                   ]}
                 >
                   Khoản thu
@@ -149,67 +182,65 @@ export const AddTransactionModal = ({
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Số tiền</Text>
-              <View style={styles.amountInputContainer}>
-                <Text style={styles.currencySymbol}>đ</Text>
-                <TextInput
-                  style={styles.amountInput}
-                  placeholder="0"
-                  keyboardType="numeric"
-                  value={amount}
-                  onChangeText={setAmount}
-                  autoFocus
-                />
-              </View>
+              <Controller
+                control={control}
+                name="amount"
+                render={({ field: { onChange, value } }) => (
+                  <View style={styles.amountInputContainer}>
+                    <Text style={styles.currencySymbol}>đ</Text>
+                    <TextInput
+                      style={styles.amountInput}
+                      placeholder="0"
+                      keyboardType="numeric"
+                      value={value}
+                      onChangeText={onChange}
+                      autoFocus
+                    />
+                  </View>
+                )}
+              />
+              {errors.amount && (
+                <Text style={styles.errorText}>{errors.amount.message}</Text>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Danh mục</Text>
               <View style={styles.categoryGrid}>
-                {filteredCategories.map((category) => (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={[
-                      styles.categoryItem,
-                      categoryId === category.id && styles.categoryItemActive,
-                      categoryId === category.id && {
-                        borderColor: category.color,
-                      },
-                    ]}
-                    onPress={() => setCategoryId(category.id)}
-                  >
-                    <Icon
-                      name={category.icon}
-                      size={20}
-                      color={
-                        categoryId === category.id
-                          ? category.color
-                          : COLORS.textLight
-                      }
-                    />
-                    <Text
-                      style={[
-                        styles.categoryLabel,
-                        categoryId === category.id && {
-                          color: category.color,
-                          fontWeight: "700",
-                        },
-                      ]}
-                    >
-                      {category.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {type === ETransactionType.INCOME
+                  ? categoryIncome?.map((category) => (
+                      <CategoryItem
+                        key={category.id}
+                        category={category}
+                        isActive={categoryId === category.id}
+                        onPress={(id) => setValue("categoryId", id)}
+                      />
+                    ))
+                  : categoryExpense?.map((category) => (
+                      <CategoryItem
+                        key={category.id}
+                        category={category}
+                        isActive={categoryId === category.id}
+                        onPress={(id) => setValue("categoryId", id)}
+                      />
+                    ))}
               </View>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Ghi chú</Text>
-              <TextInput
-                style={styles.noteInput}
-                placeholder="Nhập ghi chú..."
-                value={note}
-                onChangeText={setNote}
-                multiline
+              <Controller
+                control={control}
+                name="note"
+                render={({ field: { onChange, value } }) => (
+                  <TextInput
+                    style={styles.noteInput}
+                    placeholder="Nhập ghi chú..."
+                    value={value}
+                    onChangeText={onChange}
+                    multiline
+                  />
+                )}
               />
             </View>
 
@@ -218,10 +249,12 @@ export const AddTransactionModal = ({
                 styles.submitButton,
                 {
                   backgroundColor:
-                    type === "expense" ? COLORS.danger : COLORS.success,
+                    type === ETransactionType.EXPENSE
+                      ? COLORS.danger
+                      : COLORS.success,
                 },
               ]}
-              onPress={handleSubmit}
+              onPress={handleSubmit(onSubmit)}
             >
               <Text style={styles.submitButtonText}>Lưu giao dịch</Text>
             </TouchableOpacity>
@@ -327,26 +360,6 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: SPACING.sm,
   },
-  categoryItem: {
-    width: "23%",
-    aspectRatio: 1,
-    backgroundColor: COLORS.gray[50],
-    borderRadius: RADIUS.md,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: SPACING.xs,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  categoryItemActive: {
-    backgroundColor: "rgba(0,0,0,0.03)",
-  },
-  categoryLabel: {
-    fontSize: 10,
-    marginTop: 4,
-    color: COLORS.textLight,
-    textAlign: "center",
-  },
   noteInput: {
     backgroundColor: COLORS.gray[50],
     borderRadius: RADIUS.md,
@@ -367,5 +380,10 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 18,
     fontWeight: "bold",
+  },
+  errorText: {
+    color: COLORS.danger,
+    fontSize: 12,
+    marginTop: 4,
   },
 });

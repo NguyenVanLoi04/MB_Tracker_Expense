@@ -20,18 +20,25 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { RootState } from "@/store";
+import { logout } from "@/store/slices/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+
 export default function SettingsScreen() {
   const router = useRouter();
+  const { user } = useSelector((state: RootState) => state.auth);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [isNotificationEnabled, setIsNotificationEnabled] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [currency, setCurrency] = useState("VND");
   const [isLanguageModalVisible, setIsLanguageModalVisible] = useState(false);
   const [language, setLanguage] = useState("Tiếng Việt");
+  const dispatch = useDispatch();
 
   const handleLogoutConfirm = async () => {
     setIsLogoutModalVisible(false);
     await StorageService.clearAllData();
+    dispatch(logout());
     router.replace("/login");
   };
 
@@ -151,8 +158,10 @@ export default function SettingsScreen() {
             <Icon name="user" size={32} color={COLORS.white} />
           </View>
           <View>
-            <Text style={styles.profileName}>Người dùng</Text>
-            <Text style={styles.profileEmail}>user@expensetracker.com</Text>
+            <Text style={styles.profileName}>{user?.name || "Người dùng"}</Text>
+            <Text style={styles.profileEmail}>
+              {user?.userName || "user@expensetracker.com"}
+            </Text>
           </View>
         </Animated.View>
 

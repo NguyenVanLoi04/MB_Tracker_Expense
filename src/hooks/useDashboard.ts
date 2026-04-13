@@ -3,7 +3,7 @@ import { vi } from "date-fns/locale";
 import { useMemo, useState } from "react";
 import { CATEGORIES } from "../constants/categories";
 import { useExpense } from "../context/ExpenseContext";
-import { CategoryStat } from "../types";
+import { CategoryStat, ETransactionType } from "../types";
 
 export const useDashboard = () => {
   const { summary, transactions, budget, setMonthlyBudget } = useExpense();
@@ -26,10 +26,13 @@ export const useDashboard = () => {
   const categoryStats = useMemo(() => {
     if (transactions.length === 0 || summary.expense === 0) return [];
 
-    return CATEGORIES.filter((cat) => cat.type === "expense")
+    return CATEGORIES.filter((cat) => cat.type === ETransactionType.EXPENSE)
       .map((cat) => {
         const total = transactions
-          .filter((t) => t.categoryId === cat.id && t.type === "expense")
+          .filter(
+            (t) =>
+              t.categoryId === cat.id && t.type === ETransactionType.EXPENSE,
+          )
           .reduce((sum, t) => sum + t.amount, 0);
 
         return total > 0
@@ -55,7 +58,7 @@ export const useDashboard = () => {
     });
 
     transactions.forEach((t) => {
-      if (t.type === "expense") {
+      if (t.type === ETransactionType.EXPENSE) {
         const transDate = new Date(t.date);
         last7Days.forEach((day) => {
           if (isSameDay(transDate, day.date)) {

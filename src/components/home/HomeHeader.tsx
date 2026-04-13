@@ -13,7 +13,7 @@ import { Icon } from "../Icon";
 
 export const HomeHeader = () => {
   const { data: userProfile } = useUserProfile();
-  const userName = userProfile?.data?.user_name;
+  const nameOfUser = userProfile?.data?.name;
   return (
     <Animated.View
       entering={FadeInDown.duration(800).springify()}
@@ -21,7 +21,7 @@ export const HomeHeader = () => {
     >
       <View>
         <Text style={styles.greeting}>Xin chào,</Text>
-        <Text style={styles.userName}>{userName}</Text>
+        <Text style={styles.userName}>{nameOfUser}</Text>
       </View>
       <TouchableOpacity style={styles.notificationBtn}>
         <Icon name="bell" size={24} color={COLORS.text} />

@@ -18,3 +18,13 @@ export interface INestResponse<T> {
   message: string;
   data: T;
 }
+
+export interface INestResponseWithPagination<T> {
+  data: T;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}

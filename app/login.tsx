@@ -20,6 +20,7 @@ import Toast from "react-native-toast-message";
 import { useDispatch, useSelector } from "react-redux";
 import { Icon } from "../src/components/Icon";
 import { RHFCheckbox, RHFInput } from "../src/components/RHF";
+import { STORAGE_KEYS } from "../src/constants/storage";
 import { COLORS, RADIUS, SPACING } from "../src/constants/theme";
 import {
   ILoginFormValues,
@@ -54,9 +55,9 @@ export default function LoginScreen() {
       if (token) {
         dispatch(setToken(token));
         if (variables.rememberMe) {
-          AsyncStorage.setItem("user_token", token);
+          AsyncStorage.setItem(STORAGE_KEYS.USER_TOKEN, token);
         } else {
-          AsyncStorage.removeItem("user_token");
+          AsyncStorage.removeItem(STORAGE_KEYS.USER_TOKEN);
         }
       }
 

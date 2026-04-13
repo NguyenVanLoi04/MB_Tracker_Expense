@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import { StorageService } from "../services/storage.service";
-import { Summary, Transaction } from "../types";
+import { ETransactionType, Summary, Transaction } from "../types";
 
 interface ExpenseContextType {
   transactions: Transaction[];
@@ -73,7 +73,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
   const summary = useMemo(() => {
     return transactions.reduce(
       (acc, t) => {
-        if (t.type === "income") {
+        if (t.type === ETransactionType.INCOME) {
           acc.income += t.amount;
           acc.balance += t.amount;
         } else {

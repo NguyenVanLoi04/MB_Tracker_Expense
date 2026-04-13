@@ -18,6 +18,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { AppSplashScreen } from "../src/components/AppSplashScreen";
+import { STORAGE_KEYS } from "../src/constants/storage";
 import { ExpenseProvider } from "../src/context/ExpenseContext";
 import { useColorScheme } from "../src/hooks/use-color-scheme";
 import { RootState, store } from "../src/store";
@@ -100,7 +101,7 @@ function InitialAuthLoader({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const loadToken = async () => {
       try {
-        const token = await AsyncStorage.getItem("user_token");
+        const token = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
         if (token) {
           dispatch(setToken(token));
         } else {
