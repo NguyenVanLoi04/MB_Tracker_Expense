@@ -11,7 +11,8 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { COLORS, RADIUS, SPACING } from "../constants/theme";
+import * as Haptics from "expo-haptics";
+import { COLORS, RADIUS, SHADOWS, SPACING } from "../constants/theme";
 import { formatCurrency } from "../utils";
 
 interface ChartData {
@@ -26,12 +27,14 @@ interface SpendingChartProps {
 
 const AnimatedBar = ({
   height,
+  amount,
   index,
   isSelected,
   isMax,
   onPress,
 }: {
   height: number;
+  amount: number;
   index: number;
   isSelected: boolean;
   isMax: boolean;
@@ -42,7 +45,7 @@ const AnimatedBar = ({
   useEffect(() => {
     animatedHeight.value = withDelay(
       300 + index * 100,
-      withSpring(Math.max(height, 8), { damping: 14, stiffness: 90 }),
+      withSpring(Math.max(height, 8), { damping: 12, stiffness: 100 }),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [height, index]);
@@ -57,25 +60,15 @@ const AnimatedBar = ({
     ],
   }));
 
-  const dotStyle = useAnimatedStyle(() => ({
-    opacity: withTiming(isSelected ? 1 : 0, { duration: 200 }),
-    transform: [
-      {
-        translateY: withSpring(isSelected ? -8 : 10),
-      },
-      {
-        scale: withSpring(isSelected ? 1 : 0.5),
-      },
-    ],
-  }));
-
   return (
     <TouchableOpacity
       activeOpacity={1}
-      onPress={onPress}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
       style={styles.barTouchArea}
     >
-      <Animated.View style={[styles.activeDot, dotStyle]} />
       <View
         style={[styles.barWrapper, isSelected && styles.barWrapperSelected]}
       >
@@ -139,22 +132,14 @@ export const SpendingChart = ({ data, title }: SpendingChartProps) => {
 
       {/* Modern High-End Chart Area */}
       <View style={styles.chartArea}>
-        {/* Subtle Background Grid Lines */}
-        <View style={styles.gridLines}>
-          {[1, 2, 3].map((_, i) => (
-            <View
-              key={i}
-              style={[styles.gridLine, { opacity: 0.1 * (4 - i) }]}
-            />
-          ))}
-        </View>
 
         {data.map((item, index) => {
-          const barHeight = (item.amount / maxAmount) * 120; // Taller bars
+          const barHeight = (item.amount / maxAmount) * 105; // Slightly taller max height
           return (
             <View key={item.day} style={styles.barContainer}>
               <AnimatedBar
                 height={barHeight}
+                amount={item.amount}
                 index={index}
                 isSelected={selectedIndex === index}
                 isMax={item.amount === maxAmount && item.amount > 0}
@@ -192,11 +177,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xl,
     marginHorizontal: SPACING.lg,
     marginTop: SPACING.lg,
-    elevation: 8,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
+    ...SHADOWS.lg,
     overflow: "hidden",
     position: "relative",
   },
@@ -255,7 +236,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
-    height: 180,
+    height: 160, // Increased slightly from 140
     paddingHorizontal: SPACING.md,
     position: "relative",
   },
@@ -278,28 +259,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   barTouchArea: {
-    height: 150,
+    height: 130, // Increased from 110
     width: "100%",
     justifyContent: "flex-end",
     alignItems: "center",
   },
-  activeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.primary,
-    marginBottom: 2,
-  },
   barWrapper: {
-    height: 140,
-    width: 16,
-    backgroundColor: COLORS.gray[100],
+    height: 120, // Increased from 100
+    width: 22, 
+    backgroundColor: "rgba(0,0,0,0.02)",
     borderRadius: RADIUS.full,
     justifyContent: "flex-end",
-    overflow: "hidden",
   },
   barWrapperSelected: {
-    backgroundColor: COLORS.primary + "15",
+    backgroundColor: "transparent",
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+    elevation: 8,
   },
   bar: {
     width: "100%",

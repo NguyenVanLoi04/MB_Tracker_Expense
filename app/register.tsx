@@ -19,7 +19,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { Icon } from "../src/components/Icon";
-import { COLORS, RADIUS, SPACING } from "../src/constants/theme";
+import { COLORS, RADIUS, SHADOWS, SPACING } from "../src/constants/theme";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -289,11 +289,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: SPACING.md,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
+    ...SHADOWS.primary,
     marginTop: SPACING.lg,
   },
   title: {
@@ -351,11 +347,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    ...SHADOWS.primary,
     marginTop: SPACING.md,
     marginBottom: SPACING.lg,
   },

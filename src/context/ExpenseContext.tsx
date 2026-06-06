@@ -1,12 +1,8 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import { StorageService } from "../services/storage.service";
-import { ETransactionType, Summary, Transaction } from "../types";
+import React, { createContext, useContext, useMemo, useState } from "react";
+import { useCreateTransaction } from "../hooks/transaction/useCreateTransaction";
+import { useGetListTransaction } from "../hooks/transaction/useGetListTransaction";
+import { useGetSummary } from "../hooks/transaction/useGetSummary";
+import { Summary, Transaction } from "../types";
 
 interface ExpenseContextType {
   transactions: Transaction[];
@@ -24,68 +20,59 @@ const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
 export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [budget, setBudget] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [budget, setBudget] = useState(2000000);
 
-  useEffect(() => {
-    const init = async () => {
-      const [transData, budgetData] = await Promise.all([
-        StorageService.getTransactions(),
-        StorageService.getBudget(),
-      ]);
-      setTransactions(transData);
-      setBudget(budgetData);
-      setIsLoading(false);
-    };
-    init();
-  }, []);
+  const { data: apiResponse, isLoading } = useGetListTransaction();
+  const { data: summaryResponse } = useGetSummary();
+  const createMutation = useCreateTransaction({
+    onSuccess: () => {
+      console.log("Transaction created successfully");
+    },
+    onError: () => {
+      console.log("Transaction creation failed");
+    },
+  });
+
+  const transactions: Transaction[] = useMemo(() => {
+    const items = apiResponse?.data || [];
+
+    return items.map((apiItem) => ({
+      id: apiItem.id.toString(),
+      amount: apiItem.amount,
+      categoryId: apiItem.category?.id || 1,
+      note: apiItem.note,
+      date: apiItem.transactionDate,
+      type: apiItem.type,
+    }));
+  }, [apiResponse]);
 
   const addTransaction = async (data: Omit<Transaction, "id">) => {
-    const newTransaction: Transaction = {
-      ...data,
-      id: Date.now().toString(),
-    };
-    const updated = [newTransaction, ...transactions];
-    setTransactions(updated);
-    await StorageService.saveTransactions(updated);
+    await createMutation.mutateAsync({
+      amount: data.amount,
+      categoryId: data.categoryId,
+      note: data.note,
+      date: data.date,
+      type: data.type,
+    });
   };
 
   const deleteTransaction = async (id: string) => {
-    const updated = transactions.filter((t) => t.id !== id);
-    setTransactions(updated);
-    await StorageService.saveTransactions(updated);
+    console.warn("Chưa gọi hàm xoá cho ID trên API:", id);
   };
 
-  const updateTransaction = async (updatedItem: Transaction) => {
-    const updated = transactions.map((t) =>
-      t.id === updatedItem.id ? updatedItem : t,
-    );
-    setTransactions(updated);
-    await StorageService.saveTransactions(updated);
+  const updateTransaction = async (data: Transaction) => {
+    console.warn("Chưa gọi hàm cập nhật trên API cho:", data);
   };
 
   const setMonthlyBudget = async (amount: number) => {
     setBudget(amount);
-    await StorageService.saveBudget(amount);
   };
 
   const summary = useMemo(() => {
-    return transactions.reduce(
-      (acc, t) => {
-        if (t.type === ETransactionType.INCOME) {
-          acc.income += t.amount;
-          acc.balance += t.amount;
-        } else {
-          acc.expense += t.amount;
-          acc.balance -= t.amount;
-        }
-        return acc;
-      },
-      { balance: 0, income: 0, expense: 0 },
-    );
-  }, [transactions]);
+    return summaryResponse?.data || { balance: 0, income: 0, expense: 0 };
+  }, [summaryResponse]);
 
+  // Trả về Provider chứa mọi trạng thái
   return (
     <ExpenseContext.Provider
       value={{

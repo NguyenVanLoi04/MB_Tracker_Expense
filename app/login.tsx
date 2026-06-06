@@ -21,7 +21,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Icon } from "../src/components/Icon";
 import { RHFCheckbox, RHFInput } from "../src/components/RHF";
 import { STORAGE_KEYS } from "../src/constants/storage";
-import { COLORS, RADIUS, SPACING } from "../src/constants/theme";
+import { COLORS, RADIUS, SHADOWS, SPACING } from "../src/constants/theme";
 import {
   ILoginFormValues,
   loginDefaultValues,
@@ -189,11 +189,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: SPACING.lg,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
+    ...SHADOWS.primary,
   },
   title: {
     fontSize: 28,
@@ -259,11 +255,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    ...SHADOWS.primary,
   },
   loginButtonDisabled: {
     backgroundColor: COLORS.gray[400],

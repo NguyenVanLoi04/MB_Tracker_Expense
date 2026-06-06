@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { COLORS, SPACING } from "../../constants/theme";
+import { COLORS, SHADOWS, SPACING } from "../../constants/theme";
 import { Icon } from "../Icon";
 
 export const HomeHeader = () => {
@@ -55,10 +55,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 2,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...SHADOWS.sm,
   },
 });

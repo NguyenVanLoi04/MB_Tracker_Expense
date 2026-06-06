@@ -10,10 +10,17 @@ interface IconProps extends LucideProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export const Icon = ({ name, ...props }: IconProps) => {
+export const Icon = React.memo(({ name, strokeWidth = 1.5, ...props }: IconProps) => {
   if (!name) return null;
 
-  const iconName = name
+  // Smart aliases for specific icon preferences
+  const aliasMap: Record<string, string> = {
+    // e.g. "wallet": "wallet-cards"
+  };
+
+  const finalName = aliasMap[name] || name;
+
+  const iconName = finalName
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join("") as keyof typeof Icons;
@@ -21,5 +28,7 @@ export const Icon = ({ name, ...props }: IconProps) => {
   // eslint-disable-next-line import/namespace
   const LucideIcon = Icons[iconName] as React.ElementType;
 
-  return LucideIcon ? <LucideIcon {...props} /> : null;
-};
+  return LucideIcon ? <LucideIcon strokeWidth={strokeWidth} {...props} /> : null;
+});
+
+Icon.displayName = "Icon";

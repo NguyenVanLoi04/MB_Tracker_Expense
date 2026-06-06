@@ -2,7 +2,7 @@ import { Link, Stack } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Icon } from "../src/components/Icon";
-import { COLORS, RADIUS, SPACING } from "../src/constants/theme";
+import { COLORS, RADIUS, SHADOWS, SPACING } from "../src/constants/theme";
 
 export default function NotFoundScreen() {
   return (
@@ -43,11 +43,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: SPACING.xl,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 5,
+    ...SHADOWS.primary,
   },
   title: {
     fontSize: 24,
@@ -72,11 +68,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     borderRadius: RADIUS.lg,
     alignItems: "center",
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    ...SHADOWS.primary,
   },
   buttonText: {
     color: COLORS.white,

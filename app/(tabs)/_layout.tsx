@@ -1,8 +1,9 @@
 import { Icon } from "@/components/Icon";
-import { COLORS } from "@/constants/theme";
+import { COLORS, SHADOWS } from "@/constants/theme";
 import { Tabs } from "expo-router";
 import React from "react";
 import { Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useAnimatedStyle,
   withSpring,
@@ -33,6 +34,8 @@ const AnimatedIcon = ({
 };
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
@@ -42,16 +45,16 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: COLORS.white,
           borderTopWidth: 0,
-          elevation: 10,
-          shadowColor: COLORS.black,
+          ...SHADOWS.md,
           shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.05,
-          shadowRadius: 10,
-          height: Platform.OS === "ios" ? 50 : 50,
+          height: 60 + (Platform.OS === 'ios' ? insets.bottom : 0),
+          paddingBottom: Platform.OS === 'ios' ? insets.bottom : 10,
+          paddingTop: 10,
         },
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: "600",
+          marginBottom: Platform.OS === 'ios' && insets.bottom === 0 ? 5 : 0,
         },
       }}
     >

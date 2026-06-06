@@ -22,7 +22,7 @@ import { SpendingChart } from "../../src/components/SpendingChart";
 import { SummaryCard } from "../../src/components/SummaryCard";
 import { TransactionDetailModal } from "../../src/components/TransactionDetailModal";
 import { TransactionItem } from "../../src/components/TransactionItem";
-import { COLORS, RADIUS, SPACING } from "../../src/constants/theme";
+import { COLORS, RADIUS, SHADOWS, SPACING } from "../../src/constants/theme";
 import { useDashboard } from "../../src/hooks/useDashboard";
 import { Transaction } from "../../src/types";
 import { formatCurrency } from "../../src/utils";
@@ -322,10 +322,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xl,
     marginTop: SPACING.md,
     elevation: 2,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    ...SHADOWS.sm,
   },
   budgetHeader: {
     flexDirection: "row",
@@ -507,9 +504,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     elevation: 4,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    ...SHADOWS.primary,
   },
 });

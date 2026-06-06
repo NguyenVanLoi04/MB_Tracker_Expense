@@ -35,7 +35,14 @@ export const AddTransactionModal = ({
   initialData,
 }: AddTransactionModalProps) => {
   const { updateTransaction } = useExpense();
-  const createTransactionMutation = useCreateTransaction();
+  const createTransactionMutation = useCreateTransaction({
+    onSuccess: () => {
+      onClose();
+    },
+    onError: () => {
+      console.log("Transaction creation failed");
+    },
+  });
 
   const {
     control,

@@ -1,6 +1,6 @@
 import React from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { COLORS, RADIUS, SPACING } from "../constants/theme";
+import { COLORS, RADIUS, SHADOWS, SPACING } from "../constants/theme";
 import { Icon } from "./Icon";
 
 interface Props {
@@ -69,14 +69,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xl,
     padding: SPACING.xl,
     alignItems: "center",
+    ...SHADOWS.md,
     shadowColor: COLORS.danger,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
   },
   iconContainer: {
     width: 64,

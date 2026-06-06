@@ -1,6 +1,6 @@
 import { Icon } from "@/components/Icon";
 import ModalConfirmLogout from "@/components/ModalConfirmLogout";
-import { COLORS, RADIUS, SPACING } from "@/constants/theme";
+import { COLORS, RADIUS, SHADOWS, SPACING } from "@/constants/theme";
 import { StorageService } from "@/services/storage.service";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -309,11 +309,7 @@ const styles = StyleSheet.create({
     margin: SPACING.lg,
     borderRadius: RADIUS.xl,
     gap: SPACING.md,
-    elevation: 2,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    ...SHADOWS.sm,
   },
   avatar: {
     width: 60,
