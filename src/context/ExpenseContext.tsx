@@ -6,11 +6,9 @@ import { Summary, Transaction } from "../types";
 
 interface ExpenseContextType {
   transactions: Transaction[];
-  budget: number;
   addTransaction: (transaction: Omit<Transaction, "id">) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   updateTransaction: (transaction: Transaction) => Promise<void>;
-  setMonthlyBudget: (amount: number) => Promise<void>;
   summary: Summary;
   isLoading: boolean;
 }
@@ -20,7 +18,6 @@ const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
 export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [budget, setBudget] = useState(2000000);
 
   const { data: apiResponse, isLoading } = useGetListTransaction();
   const { data: summaryResponse } = useGetSummary();
@@ -64,10 +61,6 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
     console.warn("Chưa gọi hàm cập nhật trên API cho:", data);
   };
 
-  const setMonthlyBudget = async (amount: number) => {
-    setBudget(amount);
-  };
-
   const summary = useMemo(() => {
     return summaryResponse?.data || { balance: 0, income: 0, expense: 0 };
   }, [summaryResponse]);
@@ -77,11 +70,9 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({
     <ExpenseContext.Provider
       value={{
         transactions,
-        budget,
         addTransaction,
         deleteTransaction,
         updateTransaction,
-        setMonthlyBudget,
         summary,
         isLoading,
       }}

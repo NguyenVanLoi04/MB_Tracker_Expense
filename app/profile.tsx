@@ -1,6 +1,6 @@
 import { Icon } from "@/components/Icon";
 import { COLORS, RADIUS, SPACING } from "@/constants/theme";
-import { useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   StyleSheet,
@@ -31,6 +31,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
       <Animated.View entering={FadeInDown.duration(600)} style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Icon name="chevron-left" size={24} color={COLORS.text} />

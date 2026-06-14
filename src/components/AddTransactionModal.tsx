@@ -1,7 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import * as ImagePicker from "expo-image-picker";
 import React from "react";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -10,12 +12,16 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
-import { COLORS, RADIUS, SPACING } from "../constants/theme";
+import Toast from "react-native-toast-message";
+import { COLORS, RADIUS, SHADOWS, SPACING } from "../constants/theme";
 import { useExpense } from "../context/ExpenseContext";
-import { Icon } from "./Icon";
+import { analyzeReceipt, ScanResult } from "../services/visionService";
+import { ConfirmScanModal } from "./ConfirmScanModal";
 import { CategoryItem } from "./home/CategoryItem";
+import { Icon } from "./Icon";
+import { ImageSourceModal } from "./ImageSourceModal";
 
 import { useGetDefaultCategory } from "@/hooks/category/useGetDefaultCategory";
 import { useCreateTransaction } from "@/hooks/transaction/useCreateTransaction";
@@ -72,6 +78,53 @@ export const AddTransactionModal = ({
   const type = watch("type");
   const categoryId = watch("categoryId");
 
+  const [isScanning, setIsScanning] = React.useState(false);
+  const [showSourceModal, setShowSourceModal] = React.useState(false);
+  const [scannedResult, setScannedResult] = React.useState<{ data: ScanResult; imageUri: string } | null>(null);
+
+  const isEditing = initialData && initialData.id !== "";
+
+  const handleScanReceipt = async (source: "camera" | "gallery") => {
+    try {
+      let result;
+      if (source === "camera") {
+        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+        if (permissionResult.granted === false) {
+          Toast.show({ type: "error", text1: "Lỗi", text2: "Cần cấp quyền truy cập camera!" });
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync({ base64: true, quality: 0.8 });
+      } else {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permissionResult.granted === false) {
+          Toast.show({ type: "error", text1: "Lỗi", text2: "Cần cấp quyền truy cập thư viện!" });
+          return;
+        }
+        result = await ImagePicker.launchImageLibraryAsync({ base64: true, quality: 0.8 });
+      }
+
+      if (!result.canceled && result.assets && result.assets[0].base64) {
+        setIsScanning(true);
+        const categories = categoryResponse?.data || [];
+        const scannedData = await analyzeReceipt(result.assets[0].base64, categories);
+
+        if (scannedData) {
+          setScannedResult({
+            data: scannedData,
+            imageUri: result.assets[0].uri
+          });
+        } else {
+          Toast.show({ type: "error", text1: "Lỗi", text2: "Không thể phân tích hóa đơn." });
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      Toast.show({ type: "error", text1: "Lỗi", text2: "Có lỗi xảy ra khi phân tích hóa đơn." });
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   React.useEffect(() => {
     if (visible) {
       if (initialData) {
@@ -97,7 +150,7 @@ export const AddTransactionModal = ({
     if (isNaN(amountNum)) {
       return;
     }
-    if (initialData) {
+    if (initialData && initialData.id !== "") {
       await updateTransaction({
         ...initialData,
         amount: amountNum,
@@ -135,7 +188,7 @@ export const AddTransactionModal = ({
               <Icon name="x" size={24} color={COLORS.text} />
             </TouchableOpacity>
             <Text style={styles.title}>
-              {initialData ? "Sửa giao dịch" : "Thêm giao dịch"}
+              {initialData && initialData.id !== "" ? "Sửa giao dịch" : "Thêm giao dịch"}
             </Text>
             <View style={{ width: 44 }} />
           </View>
@@ -144,12 +197,40 @@ export const AddTransactionModal = ({
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
+            {!isEditing && (
+              <TouchableOpacity 
+                style={styles.scanBanner}
+                onPress={() => setShowSourceModal(true)}
+                disabled={isScanning}
+                activeOpacity={0.8}
+              >
+                <View style={styles.scanBannerLeft}>
+                  <View style={styles.scanBannerIconBg}>
+                    {isScanning ? (
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                    ) : (
+                      <Icon name="scan" size={24} color={COLORS.primary} />
+                    )}
+                  </View>
+                  <View>
+                    <Text style={styles.scanBannerTitle}>
+                      {isScanning ? "Đang phân tích..." : "Quét hóa đơn thông minh"}
+                    </Text>
+                    <Text style={styles.scanBannerSub}>
+                      {isScanning ? "Vui lòng đợi giây lát" : "Tự động điền thông tin chi tiêu"}
+                    </Text>
+                  </View>
+                </View>
+                {!isScanning && <Icon name="chevron-right" size={20} color={COLORS.primary} />}
+              </TouchableOpacity>
+            )}
+
             <View style={styles.typeSelector}>
               <TouchableOpacity
                 style={[
                   styles.typeButton,
                   type === ETransactionType.EXPENSE &&
-                    styles.typeButtonActiveExpense,
+                  styles.typeButtonActiveExpense,
                 ]}
                 onPress={() => {
                   setValue("type", ETransactionType.EXPENSE);
@@ -169,7 +250,7 @@ export const AddTransactionModal = ({
                 style={[
                   styles.typeButton,
                   type === ETransactionType.INCOME &&
-                    styles.typeButtonActiveIncome,
+                  styles.typeButtonActiveIncome,
                 ]}
                 onPress={() => {
                   setValue("type", ETransactionType.INCOME);
@@ -216,21 +297,21 @@ export const AddTransactionModal = ({
               <View style={styles.categoryGrid}>
                 {type === ETransactionType.INCOME
                   ? categoryIncome?.map((category) => (
-                      <CategoryItem
-                        key={category.id}
-                        category={category}
-                        isActive={categoryId === category.id}
-                        onPress={(id) => setValue("categoryId", id)}
-                      />
-                    ))
+                    <CategoryItem
+                      key={category.id}
+                      category={category}
+                      isActive={categoryId === category.id}
+                      onPress={(id) => setValue("categoryId", id)}
+                    />
+                  ))
                   : categoryExpense?.map((category) => (
-                      <CategoryItem
-                        key={category.id}
-                        category={category}
-                        isActive={categoryId === category.id}
-                        onPress={(id) => setValue("categoryId", id)}
-                      />
-                    ))}
+                    <CategoryItem
+                      key={category.id}
+                      category={category}
+                      isActive={categoryId === category.id}
+                      onPress={(id) => setValue("categoryId", id)}
+                    />
+                  ))}
               </View>
             </View>
 
@@ -268,6 +349,30 @@ export const AddTransactionModal = ({
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
+
+      <ImageSourceModal
+        visible={showSourceModal}
+        onClose={() => setShowSourceModal(false)}
+        onSelect={handleScanReceipt}
+      />
+
+      <ConfirmScanModal
+        visible={!!scannedResult}
+        onClose={() => setScannedResult(null)}
+        data={scannedResult?.data || null}
+        imageUri={scannedResult?.imageUri || ""}
+        categories={categoryResponse?.data || []}
+        onConfirm={() => {
+          if (scannedResult) {
+            setValue("amount", scannedResult.data.amount.toString());
+            setValue("categoryId", scannedResult.data.categoryId);
+            setValue("note", scannedResult.data.note || "");
+            setValue("type", scannedResult.data.type);
+            setScannedResult(null);
+            Toast.show({ type: "success", text1: "Thành công", text2: "Đã điền thông tin hóa đơn!" });
+          }
+        }}
+      />
     </Modal>
   );
 };
@@ -335,7 +440,7 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   inputGroup: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.md,
   },
   label: {
     fontSize: 14,
@@ -387,6 +492,41 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 18,
     fontWeight: "bold",
+  },
+  scanBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: COLORS.primary + "10",
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.xl,
+    borderWidth: 1,
+    borderColor: COLORS.primary + "20",
+  },
+  scanBannerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.md,
+  },
+  scanBannerIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.white,
+    justifyContent: "center",
+    alignItems: "center",
+    ...SHADOWS.sm,
+  },
+  scanBannerTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: COLORS.primary,
+    marginBottom: 2,
+  },
+  scanBannerSub: {
+    fontSize: 12,
+    color: COLORS.textLight,
   },
   errorText: {
     color: COLORS.danger,

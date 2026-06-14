@@ -1,12 +1,11 @@
 import React from "react";
 import {
-  Alert,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import Animated, {
   FadeIn,
@@ -15,6 +14,7 @@ import Animated, {
   ZoomIn,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 import { AddTransactionModal } from "../../src/components/AddTransactionModal";
 import { HomeHeader } from "../../src/components/home/HomeHeader";
 import { Icon } from "../../src/components/Icon";
@@ -30,12 +30,6 @@ import { formatCurrency } from "../../src/utils";
 export default function DashboardScreen() {
   const {
     summary,
-    budget,
-    budgetInput,
-    setBudgetInput,
-    isEditingBudget,
-    setIsEditingBudget,
-    budgetProgress,
     recentTransactions,
     categoryStats,
     modalVisible,
@@ -44,7 +38,6 @@ export default function DashboardScreen() {
     setDetailVisible,
     selectedTransaction,
     setSelectedTransaction,
-    setMonthlyBudget,
     weeklySpending,
   } = useDashboard();
 
@@ -64,17 +57,7 @@ export default function DashboardScreen() {
     setModalVisible(true);
   };
 
-  const handleSaveBudget = async () => {
-    const amount = Number(budgetInput);
-    if (isNaN(amount)) {
-      Alert.alert("Lỗi", "Vui lòng nhập số tiền hợp lệ");
-      return;
-    }
-    await setMonthlyBudget(amount);
-    setIsEditingBudget(false);
-  };
 
-  const isBudgetWarning = budgetProgress > 90;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -102,88 +85,6 @@ export default function DashboardScreen() {
           layout={Layout.springify()}
         >
           <SpendingChart data={weeklySpending} title="Chi tiêu tuần này" />
-        </Animated.View>
-
-        {/* Budget Section */}
-        <Animated.View
-          entering={FadeInDown.delay(500)}
-          layout={Layout.springify()}
-          style={styles.budgetCard}
-        >
-          <View style={styles.budgetHeader}>
-            <View style={styles.budgetTitleContainer}>
-              <Icon name="target" size={20} color={COLORS.primary} />
-              <Text style={styles.budgetTitle}>Ngân sách tháng này</Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => {
-                setIsEditingBudget(!isEditingBudget);
-                setBudgetInput(budget.toString());
-              }}
-            >
-              <Text style={styles.editBudgetBtn}>
-                {isEditingBudget ? "Hủy" : "Sửa"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {isEditingBudget ? (
-            <Animated.View
-              entering={ZoomIn.duration(300)}
-              style={styles.budgetEditRow}
-            >
-              <TextInput
-                style={styles.budgetInput}
-                value={budgetInput}
-                onChangeText={setBudgetInput}
-                keyboardType="numeric"
-                autoFocus
-              />
-              <TouchableOpacity
-                style={styles.saveBudgetBtn}
-                onPress={handleSaveBudget}
-              >
-                <Text style={styles.saveBudgetBtnText}>Lưu</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          ) : (
-            <View>
-              <View style={styles.budgetInfo}>
-                <Text style={styles.budgetValue}>
-                  {formatCurrency(summary.expense)} / {formatCurrency(budget)}
-                </Text>
-                <Animated.Text
-                  entering={FadeIn}
-                  style={[
-                    styles.budgetPercent,
-                    isBudgetWarning && { color: COLORS.danger },
-                  ]}
-                >
-                  {budgetProgress.toFixed(0)}%
-                </Animated.Text>
-              </View>
-              <View style={styles.progressBarBg}>
-                <Animated.View
-                  entering={FadeIn.duration(1000)}
-                  layout={Layout.duration(500)}
-                  style={[
-                    styles.progressBarFill,
-                    {
-                      width: `${budgetProgress}%`,
-                      backgroundColor: isBudgetWarning
-                        ? COLORS.danger
-                        : COLORS.primary,
-                    },
-                  ]}
-                />
-              </View>
-              <Text style={styles.budgetLeft}>
-                {budget - summary.expense > 0
-                  ? `Còn lại ${formatCurrency(budget - summary.expense)}`
-                  : `Vượt mức ${formatCurrency(summary.expense - budget)}`}
-              </Text>
-            </View>
-          )}
         </Animated.View>
 
         <Animated.View entering={FadeIn.delay(600)} layout={Layout.springify()}>
@@ -275,7 +176,6 @@ export default function DashboardScreen() {
         )}
       </Animated.ScrollView>
 
-      {/* Floating Action Button */}
       <Animated.View
         entering={ZoomIn.delay(800).springify()}
         style={styles.fabContainer}
@@ -314,81 +214,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 100,
-  },
-  budgetCard: {
-    backgroundColor: COLORS.white,
-    marginHorizontal: SPACING.lg,
-    padding: SPACING.lg,
-    borderRadius: RADIUS.xl,
-    marginTop: SPACING.md,
-    elevation: 2,
-    ...SHADOWS.sm,
-  },
-  budgetHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING.md,
-  },
-  budgetTitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  budgetTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: COLORS.text,
-  },
-  editBudgetBtn: {
-    fontSize: 14,
-    color: COLORS.primary,
-    fontWeight: "600",
-  },
-  budgetInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginBottom: 8,
-  },
-  budgetValue: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: COLORS.text,
-  },
-  budgetPercent: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.textLight,
-  },
-  budgetLeft: {
-    fontSize: 12,
-    color: COLORS.textLight,
-    marginTop: 8,
-  },
-  budgetEditRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  budgetInput: {
-    flex: 1,
-    backgroundColor: COLORS.gray[50],
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
-    fontSize: 16,
-    color: COLORS.text,
-    borderWidth: 1,
-    borderColor: COLORS.gray[200],
-  },
-  saveBudgetBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.lg,
-    justifyContent: "center",
-  },
-  saveBudgetBtnText: {
-    color: COLORS.white,
-    fontWeight: "bold",
   },
   progressBarBg: {
     height: 10,
@@ -495,6 +320,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 24,
     right: 24,
+    zIndex: 100,
   },
   fab: {
     width: 64,
@@ -503,7 +329,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 4,
     ...SHADOWS.primary,
   },
 });

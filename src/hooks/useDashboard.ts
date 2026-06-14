@@ -1,26 +1,21 @@
 import { format, isSameDay, subDays } from "date-fns";
 import { vi } from "date-fns/locale";
+import { toZonedTime } from "date-fns-tz";
 import { useMemo, useState } from "react";
 import { CATEGORIES } from "../constants/categories";
+import { APP_TIME_ZONE } from "../constants/date";
 import { useExpense } from "../context/ExpenseContext";
 import { CategoryStat, ETransactionType } from "../types";
 
 export const useDashboard = () => {
-  const { summary, transactions, budget, setMonthlyBudget } = useExpense();
+  const { summary, transactions } = useExpense();
   const [modalVisible, setModalVisible] = useState(false);
   const [detailVisible, setDetailVisible] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
-  const [isEditingBudget, setIsEditingBudget] = useState(false);
-  const [budgetInput, setBudgetInput] = useState(budget.toString());
 
   const recentTransactions = useMemo(
     () => transactions.slice(0, 5),
     [transactions],
-  );
-
-  const budgetProgress = useMemo(
-    () => (budget > 0 ? Math.min(100, (summary.expense / budget) * 100) : 0),
-    [summary.expense, budget],
   );
 
   const categoryStats = useMemo(() => {
@@ -48,8 +43,10 @@ export const useDashboard = () => {
   }, [transactions, summary.expense]);
 
   const weeklySpending = useMemo(() => {
+    const today = toZonedTime(new Date(), APP_TIME_ZONE);
+    
     const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const date = subDays(new Date(), 6 - i);
+      const date = subDays(today, 6 - i);
       return {
         date,
         dayName: format(date, "EE", { locale: vi }),
@@ -59,7 +56,7 @@ export const useDashboard = () => {
 
     transactions.forEach((t) => {
       if (t.type === ETransactionType.EXPENSE) {
-        const transDate = new Date(t.date);
+        const transDate = toZonedTime(new Date(t.date), APP_TIME_ZONE);
         last7Days.forEach((day) => {
           if (isSameDay(transDate, day.date)) {
             day.amount += t.amount;
@@ -77,12 +74,6 @@ export const useDashboard = () => {
   return {
     summary,
     transactions,
-    budget,
-    budgetInput,
-    setBudgetInput,
-    isEditingBudget,
-    setIsEditingBudget,
-    budgetProgress,
     recentTransactions,
     categoryStats,
     modalVisible,
@@ -91,7 +82,6 @@ export const useDashboard = () => {
     setDetailVisible,
     selectedTransaction,
     setSelectedTransaction,
-    setMonthlyBudget,
     weeklySpending,
   };
 };

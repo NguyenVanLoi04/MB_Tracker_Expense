@@ -69,6 +69,7 @@ export default function LoginScreen() {
       router.replace("/(tabs)");
     },
     onError: (error: any) => {
+      console.log("error::::::::::", error);
       Toast.show({
         type: "error",
         text1: "Đăng nhập thất bại",
